@@ -15,7 +15,7 @@ Skill file: [`.github/skills/outlook-day-planner/SKILL.md`](.github/skills/outlo
 3. Upload `.github/skills/outlook-day-planner/SKILL.md`.
 4. Open **Preview** and test with a prompt such as: “Plan my day tomorrow. My top priorities are the customer proposal and the team review.”
 
-The Markdown file provides the agent's workflow and behavior. It does not create the Copilot Studio agent, configure connectors, grant permissions, or publish the agent.
+The Markdown file defines the skill's workflow and behavior. By itself it does not create an agent or configure connectors. With Copilot Studio MCP configured in VS Code, GitHub Copilot can drive the agent lifecycle using your signed-in identity and the operations your account is allowed to use.
 
 ## Outlook connection
 
@@ -46,7 +46,8 @@ This workflow turns spoken business requirements into a reviewable skill file in
 - VS Code with GitHub Copilot Chat installed and signed in.
 - This repository cloned and opened as the VS Code workspace.
 - A working microphone and Windows Voice Typing. In the Copilot Chat input, press **Win+H** to dictate; if voice typing is unavailable, type or paste the same prompt.
-- Copilot Studio access if you want to continue from the generated file to an agent preview.
+- Copilot Studio MCP access if you want GitHub Copilot to create, test, and deploy the agent from VS Code. See [Copilot Studio MCP in VS Code](#copilot-studio-mcp-in-vs-code).
+- A development environment and the required Copilot Studio authoring, testing, and publishing permissions.
 
 ### Workshop workflow
 
@@ -57,9 +58,23 @@ This workflow turns spoken business requirements into a reviewable skill file in
 5. Let Copilot inspect the existing skill and README, then ask it to create or update only the relevant `SKILL.md`. The skill must have YAML front matter with `name` and `description`, plus clear workflow steps, safety rules, response format, and test prompts.
 6. Review the proposed diff. Confirm that the skill uses only tools that will actually be configured, asks before external writes, and states its fallback when a tool is unavailable.
 7. Ask Copilot to validate the Markdown and check the test prompts against the requirements. Fix any mismatch before accepting the changes.
-8. In Copilot Studio, create or open an agent using the **GitHub Copilot harness**, then upload the generated skill under **Build** > **Skills** > **Add skill** > **Upload a skill**.
-9. Test the agent in **Preview**. Configure and authorize Outlook calendar actions separately before demonstrating live calendar reads or writes.
-10. Commit and push the reviewed Markdown changes only after the workshop owner approves them.
+8. Ask GitHub Copilot to use Copilot Studio MCP to confirm the signed-in identity, discover current capabilities, and show the selected development environment. Do not let it guess or select an environment implicitly.
+9. Ask Copilot to create or update the agent as a draft from the reviewed skill. Have it inspect the available authoring schema and report any unsupported component rather than claiming it was added.
+10. Ask Copilot to run the available tests against the skill's test prompts, then review the results and the exact agent, environment, tools, and channels that would be released.
+11. Give a separate explicit approval to publish/deploy that reviewed agent to the named environment and channels. Copilot must verify the deployment result and report what is available to users.
+12. Configure and authorize Outlook calendar actions separately before demonstrating live calendar reads or writes. Commit and push repository changes only after the workshop owner approves them.
+
+### Copilot Studio MCP in VS Code
+
+This repository includes a workspace-scoped MCP registration in `.vscode/mcp.json` for Microsoft's `@microsoft/copilot-studio-mcp` package.
+
+1. Open this repository in VS Code. Ensure Node.js, npm, and `npx` are available, and that your organization permits the Microsoft-published MCP package.
+2. Open `.vscode/mcp.json`, review the server configuration, then use VS Code's MCP controls to start and trust the server.
+3. In Copilot Chat Agent mode, connect with your Microsoft work account and select the intended **development** environment. Review sign-in and consent prompts; never paste credentials or tokens into chat.
+4. Ask Copilot to show the available Copilot Studio capabilities and confirm the account and environment before allowing changes.
+5. Keep tool approval enabled. Ask Copilot to save a draft and test first. Publishing/deployment requires a separate approval after Copilot summarizes the agent, environment, channels, and test results.
+
+The MCP registration does not grant permissions, select an environment, create Outlook connections, or authorize publishing. Tool availability depends on the signed-in account, environment permissions, service rollout, and VS Code policy. If a required operation is unavailable, stop and report the limitation; use the manual upload steps above as a fallback.
 
 ### Voice prompt to dictate
 
@@ -71,14 +86,19 @@ Business requirements:
 
 First inspect the existing repository files and preserve unrelated content. Write the skill as Markdown with YAML front matter containing a lowercase hyphenated name and a concise activation description. Include the agent's goal, an explicit step-by-step workflow, required tools and permissions, safety rules for external actions, fallback behavior when a tool is unavailable, response format, and at least three test prompts including one safety edge case.
 
-Do not create or modify backend services, connect external accounts, access live customer data, or execute actions in external systems. Only create or update the relevant Markdown file. Show me the diff and validation results, and wait for my approval before committing or pushing.
+For this stage, only create or update the relevant Markdown file. Do not access live customer data or perform external actions. Show me the diff and validation results first.
+
+After I approve the skill, use the configured Copilot Studio MCP to inspect its current authoring guidance and available operations. Confirm my signed-in account and the exact development environment. Create or update the agent as a draft, add the skill if the available schema supports it, and run the available tests. Do not invent operations or claim success without tool evidence.
+
+Before publishing or deploying, summarize the exact agent, environment, channels, audience, and test results, then ask for a separate explicit approval. Never publish to production or broaden access by default. Commit or push GitHub changes only after I separately approve those changes.
 ```
 
 ### Voice and licensing notes
 
 - **Win+H is dictation**, not ambient listening: it captures speech while the user invokes voice typing in the focused text field. Always review the transcript before sending it.
 - VS Code voice-chat or wake-word availability can vary by product, extension, account, and tenant. The workshop does not depend on those features; use Windows Voice Typing or keyboard input as the fallback.
-- Creating a skill file in VS Code and testing it with GitHub Copilot are separate from creating or publishing a Copilot Studio agent. Copilot Studio access, the selected harness, tenant billing, and publishing permissions must be checked in advance.
+- Creating a skill file in VS Code and testing it with GitHub Copilot are separate from creating or publishing a Copilot Studio agent. The MCP route requires Copilot Studio access, an approved package, a signed-in work account, a deliberately selected environment, tenant billing, and publishing permissions.
+- Saving a draft, testing it, publishing it, and deploying it to channels are separate outcomes. Copilot must report each one accurately and wait for explicit approval before publishing/deploying.
 - A skill file does not configure Outlook access. Live calendar behavior requires separately configured and authorized Outlook actions.
 
 ## Microsoft documentation
@@ -88,3 +108,5 @@ Do not create or modify backend services, connect external accounts, access live
 - [Copilot Studio licensing](https://learn.microsoft.com/microsoft-copilot-studio/billing-licensing)
 - [Set up GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/setup)
 - [Getting started with GitHub Copilot Chat in VS Code](https://code.visualstudio.com/docs/copilot/getting-started-chat)
+- [Connect to Copilot Studio MCP with VS Code](https://learn.microsoft.com/microsoft-copilot-studio/agents-experience/copilot-studio-mcp-vscode-copilot-cli)
+- [Use Copilot Studio MCP](https://learn.microsoft.com/microsoft-copilot-studio/agents-experience/copilot-studio-mcp)
