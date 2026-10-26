@@ -49,48 +49,47 @@ This workflow turns spoken business requirements into a reviewable skill file in
 - Copilot Studio MCP access if you want GitHub Copilot to create, test, and deploy the agent from VS Code. See [Copilot Studio MCP in VS Code](#copilot-studio-mcp-in-vs-code).
 - A development environment and the required Copilot Studio authoring, testing, and publishing permissions.
 
-### Workshop workflow
+### One flow: voice -> GitHub -> Copilot Studio
 
-1. Open this repository in VS Code and open Copilot Chat with **Ctrl+Alt+I**.
-2. Select **Agent** mode and confirm the repository is the active workspace.
-3. Focus the chat input and press **Win+H**. Speak the requirements as business language: the user's goal, inputs, expected result, constraints, and what the agent must never do.
-4. Review and correct the transcript. Then submit it as the prompt below, replacing the bracketed section with the dictated requirements.
-5. Let Copilot inspect the existing skill and README, then ask it to create or update only the relevant `SKILL.md`. The skill must have YAML front matter with `name` and `description`, plus clear workflow steps, safety rules, response format, and test prompts.
-6. Review the proposed diff. Confirm that the skill uses only tools that will actually be configured, asks before external writes, and states its fallback when a tool is unavailable.
-7. Ask Copilot to validate the Markdown and check the test prompts against the requirements. Fix any mismatch before accepting the changes.
-8. Ask GitHub Copilot to use Copilot Studio MCP to confirm the signed-in identity, discover current capabilities, and show the selected development environment. Do not let it guess or select an environment implicitly.
-9. Ask Copilot to create or update the agent as a draft from the reviewed skill. Have it inspect the available authoring schema and report any unsupported component rather than claiming it was added.
-10. Ask Copilot to run the available tests against the skill's test prompts, then review the results and the exact agent, environment, tools, and channels that would be released.
-11. Give a separate explicit approval to publish/deploy that reviewed agent to the named environment and channels. Copilot must verify the deployment result and report what is available to users.
-12. Configure and authorize Outlook calendar actions separately before demonstrating live calendar reads or writes. Commit and push repository changes only after the workshop owner approves them.
+This is one guided Copilot Chat session, with pauses for review and approval at consequential steps. GitHub stores the reviewed skill as the source of truth; Copilot Studio MCP carries the same work into the selected Studio environment.
 
-### Copilot Studio MCP in VS Code
+1. Complete the one-time MCP setup below, sign in, and select a development environment.
+2. Open this repository in VS Code. Open Copilot Chat with **Ctrl+Alt+I**, select **Agent** mode, and confirm this repository is the active workspace.
+3. Focus the chat input, press **Win+H**, and speak the business requirements. Review and correct the transcript before sending it with the single-flow prompt below.
+4. Copilot reads the repository, creates or updates the relevant `SKILL.md`, checks its YAML front matter and Markdown, and validates the test prompts. It shows the diff and pauses for approval.
+5. After approval, Copilot commits and pushes the reviewed change to the current GitHub branch. It verifies the commit and a clean, synchronized worktree before continuing.
+6. In the same chat, Copilot uses Copilot Studio MCP to verify the signed-in identity and target environment, discover current authoring and deployment operations, and create or update the Studio agent as a draft from the reviewed skill.
+7. Copilot runs the available tests and shows the exact agent, environment, connected tools, channels, audience, and test results. It pauses again for explicit release approval.
+8. Only after that separate approval does Copilot publish/deploy to the named environment and channels. It verifies the service result and reports what was deployed. If an operation is unavailable or its result is uncertain, Copilot stops and reports that instead of claiming success.
+
+Outlook connections and permissions are configured separately. The flow must not access live calendar data or create calendar events unless those connections are ready and the user separately approves the relevant action.
+
+### One-time setup: Copilot Studio MCP in VS Code
 
 This repository includes a workspace-scoped MCP registration in `.vscode/mcp.json` for Microsoft's `@microsoft/copilot-studio-mcp` package.
 
-1. Open this repository in VS Code. Ensure Node.js, npm, and `npx` are available, and that your organization permits the Microsoft-published MCP package.
+1. Ensure Node.js, npm, and `npx` are available, and that your organization permits the Microsoft-published MCP package.
 2. Open `.vscode/mcp.json`, review the server configuration, then use VS Code's MCP controls to start and trust the server.
 3. In Copilot Chat Agent mode, connect with your Microsoft work account and select the intended **development** environment. Review sign-in and consent prompts; never paste credentials or tokens into chat.
-4. Ask Copilot to show the available Copilot Studio capabilities and confirm the account and environment before allowing changes.
-5. Keep tool approval enabled. Ask Copilot to save a draft and test first. Publishing/deployment requires a separate approval after Copilot summarizes the agent, environment, channels, and test results.
+4. Keep tool approval enabled. The MCP connection is then available to the one-flow prompt above.
 
 The MCP registration does not grant permissions, select an environment, create Outlook connections, or authorize publishing. Tool availability depends on the signed-in account, environment permissions, service rollout, and VS Code policy. If a required operation is unavailable, stop and report the limitation; use the manual upload steps above as a fallback.
 
-### Voice prompt to dictate
+### Single-flow prompt to dictate
 
 ```text
-Create or update an uploadable Copilot Studio skill in this repository from the business requirements below.
+Run one guided workflow from my spoken requirements through GitHub to a deployed Copilot Studio agent. Keep all steps in this Copilot Chat session and pause only at the approval gates below.
 
 Business requirements:
 [Speak the goal, who will use the agent, what information it can use, the desired outcome, constraints, and actions it must not take.]
 
-First inspect the existing repository files and preserve unrelated content. Write the skill as Markdown with YAML front matter containing a lowercase hyphenated name and a concise activation description. Include the agent's goal, an explicit step-by-step workflow, required tools and permissions, safety rules for external actions, fallback behavior when a tool is unavailable, response format, and at least three test prompts including one safety edge case.
+First inspect the repository and preserve unrelated content. Create or update only the relevant skill file as Markdown with YAML front matter containing a lowercase hyphenated name and a concise activation description. Include the agent's goal, step-by-step workflow, required tools and permissions, external-action safety rules, fallback behavior, response format, and at least three test prompts including a safety edge case. Validate the Markdown and test prompts, show me the diff, and wait for my approval before committing.
 
-For this stage, only create or update the relevant Markdown file. Do not access live customer data or perform external actions. Show me the diff and validation results first.
+After I approve the file changes, commit and push them to the current GitHub branch. Verify the commit, remote synchronization, and clean worktree. Use the pushed skill as the source of truth for deployment.
 
-After I approve the skill, use the configured Copilot Studio MCP to inspect its current authoring guidance and available operations. Confirm my signed-in account and the exact development environment. Create or update the agent as a draft, add the skill if the available schema supports it, and run the available tests. Do not invent operations or claim success without tool evidence.
+Then use the configured Copilot Studio MCP. Read its current authoring guidance and discover the actual available operations. Confirm my signed-in identity and the exact development environment. Create or update the agent as a draft from the pushed skill, attach the skill if supported, and run the available tests. Do not guess operation names or claim success without tool evidence. If the connection or a required operation is unavailable, stop and explain what setup is missing.
 
-Before publishing or deploying, summarize the exact agent, environment, channels, audience, and test results, then ask for a separate explicit approval. Never publish to production or broaden access by default. Commit or push GitHub changes only after I separately approve those changes.
+Before publishing or deploying, summarize the exact agent, environment, channels, audience, and test results, then ask for a separate explicit approval. Never publish to production or broaden access by default. After approval, publish/deploy to the named target, verify the result, and summarize the deployed version and access. Do not access live calendar data or write calendar events as part of agent deployment.
 ```
 
 ### Voice and licensing notes
