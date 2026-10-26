@@ -1,0 +1,97 @@
+name: Deploy Outlook Day Planner to Copilot Studio
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "copilot-agent/**"
+      - ".github/workflows/deploy-copilot-studio.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copilot-studio-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Package, import, and publish
+    if: ${{ github.ref == 'refs/heads/main' && vars.POWERPLATFORM_ENVIRONMENT_URL != '' }}
+    runs-on: windows-latest
+    environment:
+      name: copilot-studio-dev
+      url: ${{ vars.POWERPLATFORM_ENVIRONMENT_URL }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Power Platform CLI
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      - name: Validate deployment configuration
+        shell: pwsh
+        env:
+          POWERPLATFORM_APP_ID: ${{ secrets.POWERPLATFORM_APP_ID }}
+          POWERPLATFORM_TENANT_ID: ${{ secrets.POWERPLATFORM_TENANT_ID }}
+          POWERPLATFORM_CLIENT_SECRET: ${{ secrets.POWERPLATFORM_CLIENT_SECRET }}
+        run: |
+          $missing = @()
+          foreach ($name in @("POWERPLATFORM_APP_ID", "POWERPLATFORM_TENANT_ID", "POWERPLATFORM_CLIENT_SECRET")) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              $missing += $name
+            }
+          }
+          if ($missing.Count -gt 0) {
+            throw "Missing GitHub environment secrets: $($missing -join ', ')"
+          }
+
+      - name: Authenticate to the development environment
+        shell: pwsh
+        env:
+          POWERPLATFORM_APP_ID: ${{ secrets.POWERPLATFORM_APP_ID }}
+          POWERPLATFORM_TENANT_ID: ${{ secrets.POWERPLATFORM_TENANT_ID }}
+          POWERPLATFORM_CLIENT_SECRET: ${{ secrets.POWERPLATFORM_CLIENT_SECRET }}
+          POWERPLATFORM_ENVIRONMENT_URL: ${{ vars.POWERPLATFORM_ENVIRONMENT_URL }}
+        run: >-
+          pac auth create
+          --name GitHubActions
+          --applicationId "$env:POWERPLATFORM_APP_ID"
+          --clientSecret "$env:POWERPLATFORM_CLIENT_SECRET"
+          --tenant "$env:POWERPLATFORM_TENANT_ID"
+          --environment "$env:POWERPLATFORM_ENVIRONMENT_URL"
+
+      - name: Package CLI-authored agent
+        shell: pwsh
+        run: |
+          $outputPath = Join-Path $env:RUNNER_TEMP "copilot-agent-package"
+          New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
+          pac copilot pack --publisher-prefix inkubit --project-dir copilot-agent --output-path $outputPath --solution-name inkubit_OutlookDayPlanner
+
+      - name: Import and publish agent
+        shell: pwsh
+        env:
+          POWERPLATFORM_ENVIRONMENT_URL: ${{ vars.POWERPLATFORM_ENVIRONMENT_URL }}
+        run: |
+          $solutionPath = Join-Path $env:RUNNER_TEMP "copilot-agent-package/inkubit_OutlookDayPlanner.zip"
+          pac solution import --path $solutionPath --environment $env:POWERPLATFORM_ENVIRONMENT_URL --publish-changes
+
+      - name: Publish Copilot Studio agent
+        shell: pwsh
+        env:
+          POWERPLATFORM_ENVIRONMENT_URL: ${{ vars.POWERPLATFORM_ENVIRONMENT_URL }}
+        run: >-
+          pac copilot publish
+          --bot inkubit_OutlookDayPlanner
+          --environment "$env:POWERPLATFORM_ENVIRONMENT_URL"
+
+      - name: Verify deployment status
+        shell: pwsh
+        env:
+          POWERPLATFORM_ENVIRONMENT_URL: ${{ vars.POWERPLATFORM_ENVIRONMENT_URL }}
+        run: >-
+          pac copilot status
+          --bot-id inkubit_OutlookDayPlanner
+          --environment "$env:POWERPLATFORM_ENVIRONMENT_URL"

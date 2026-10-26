@@ -1,8 +1,0 @@
-{
-  "servers": {
-    "copilot-studio-mcp": {
-      "command": "npx",
-      "args": ["-y", "@microsoft/copilot-studio-mcp@latest"]
-    }
-  }
-}
